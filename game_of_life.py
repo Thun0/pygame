@@ -57,7 +57,7 @@ def handleInput():
 
 def init(map, background):
     print("Initializing game")
-    pygame.init
+    pygame.init()
     display = Display(background)
     map.draw(background)
 
