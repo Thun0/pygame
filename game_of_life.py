@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import pygame
 import sys
+
+import pygame
 
 clock = pygame.time.Clock()
 MAX_FPS = 60
@@ -27,6 +28,9 @@ class Map:
                                  (j*TILE_SIZE, i*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 pygame.draw.rect(display.background, (color, color, color),
                                  (j*TILE_SIZE, i*TILE_SIZE, TILE_SIZE-FRAME_WIDTH, TILE_SIZE-FRAME_WIDTH))
+
+    def clear(self):
+        self.map = [[0 for i in range(MAP_WIDTH)] for j in range(MAP_HEIGHT)]
 
     def countNeighbours(self, old, tileX, tileY):
         neighbours = 0
@@ -92,7 +96,7 @@ class Settings:
     mousePressed = 0
     painting = 1
     started = False
-    delay = 30
+    delay = 40
 
 def handleInput(map):
 
@@ -100,12 +104,20 @@ def handleInput(map):
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            Settings.started = not Settings.started
-            if Settings.started:
-                print("Simulation started")
-            else:
-                print("Simulation stopped")
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                Settings.started = not Settings.started
+                if Settings.started:
+                    print("Simulation started")
+                else:
+                    print("Simulation stopped")
+            elif event.key == pygame.K_c:
+                map.clear()
+                Settings.started = False
+            elif event.key == pygame.K_x and Settings.delay > 0:
+                Settings.delay -= 20
+            elif event.key == pygame.K_z and Settings.delay < 1000:
+                Settings.delay += 20
         if not Settings.started:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 Settings.mousePressed = True
