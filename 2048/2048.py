@@ -17,14 +17,13 @@ class Settings:
 class Board:
 
     def __init__(self):
-        self.board = [[0 for i in range(Settings.BOARD_SIZE)] for j in range(Settings.BOARD_SIZE)]
-        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
-        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
-        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
+        self.board = [[1 for i in range(Settings.BOARD_SIZE)] for j in range(Settings.BOARD_SIZE)]
+        self.addToken()
+        self.addToken()
         self.font = pygame.font.SysFont(Settings.FONT, int(Settings.TILE_SIZE/2))
 
     def tileColor(self, value):
-        if value == 0:
+        if value == 1:
             return (205, 193, 180)
         if value == 2:
             return (238, 228, 218)
@@ -49,6 +48,88 @@ class Board:
         else:
             return (238, 194, 46)
 
+    def addToken(self):
+        empty = []
+        for i in range(Settings.BOARD_SIZE):
+            for j in range(Settings.BOARD_SIZE):
+                if self.board[i][j] == 1:
+                    empty.append((i, j))
+        if len(empty) == 0:
+            return
+        x, y = empty[random.randint(0, len(empty)-1)]
+        if random.randint(0, 4) < 3:
+            self.board[x][y] = 2
+        else:
+            self.board[x][y] = 4
+
+
+    def swipeUp(self):
+        for r in range(Settings.BOARD_SIZE - 1):
+            for i in range(Settings.BOARD_SIZE - 1):
+                for j in range(Settings.BOARD_SIZE):
+                    if self.board[i][j] == 1:
+                        self.board[i][j] = self.board[i+1][j]
+                        self.board[i+1][j] = 1
+
+        for i in range(Settings.BOARD_SIZE - 1):
+            for j in range(Settings.BOARD_SIZE):
+                if self.board[i][j] != 1 and self.board[i][j] == self.board[i+1][j]:
+                    self.board[i][j] *= 2
+                    for r in range(i+1, Settings.BOARD_SIZE - 1):
+                        self.board[r][j] = self.board[r + 1][j]
+                        self.board[r + 1][j] = 1
+        self.addToken()
+
+    def swipeDown(self):
+        for r in range(Settings.BOARD_SIZE - 1):
+            for i in range(1, Settings.BOARD_SIZE):
+                for j in range(Settings.BOARD_SIZE):
+                    if self.board[i][j] == 1:
+                        self.board[i][j] = self.board[i-1][j]
+                        self.board[i-1][j] = 1
+
+        for i in range(Settings.BOARD_SIZE - 1, 0, -1):
+            for j in range(Settings.BOARD_SIZE):
+                if self.board[i][j] != 1 and self.board[i][j] == self.board[i-1][j]:
+                    self.board[i][j] *= 2
+                    for r in range(i-1, 0, -1):
+                        self.board[r][j] = self.board[r-1][j]
+                        self.board[r-1][j] = 1
+        self.addToken()
+
+    def swipeLeft(self):
+        for r in range(Settings.BOARD_SIZE - 1):
+            for i in range(Settings.BOARD_SIZE):
+                for j in range(Settings.BOARD_SIZE - 1):
+                    if self.board[i][j] == 1:
+                        self.board[i][j] = self.board[i][j+1]
+                        self.board[i][j+1] = 1
+
+        for i in range(Settings.BOARD_SIZE):
+            for j in range(Settings.BOARD_SIZE-1):
+                if self.board[i][j] != 1 and self.board[i][j] == self.board[i][j+1]:
+                    self.board[i][j] *= 2
+                    for r in range(j+1, Settings.BOARD_SIZE - 1):
+                        self.board[i][r] = self.board[i][r+1]
+                        self.board[i][r+1] = 1
+        self.addToken()
+
+    def swipeRight(self):
+        for r in range(Settings.BOARD_SIZE - 1):
+            for i in range(Settings.BOARD_SIZE):
+                for j in range(1, Settings.BOARD_SIZE):
+                    if self.board[i][j] == 1:
+                        self.board[i][j] = self.board[i][j-1]
+                        self.board[i][j-1] = 1
+
+        for i in range(Settings.BOARD_SIZE):
+            for j in range(Settings.BOARD_SIZE-1, 0, -1):
+                if self.board[i][j] != 1 and self.board[i][j] == self.board[i][j-1]:
+                    self.board[i][j] *= 2
+                    for r in range(j-1, 0, -1):
+                        self.board[i][r] = self.board[i][r-1]
+                        self.board[i][r-1] = 1
+        self.addToken()
 
     def draw(self, display):
 
@@ -64,7 +145,7 @@ class Board:
                                   i * Settings.TILE_SIZE + Settings.OFFSET,
                                   Settings.TILE_SIZE - Settings.FRAME_THICKNESS,
                                   Settings.TILE_SIZE - Settings.FRAME_THICKNESS))
-                if self.board[i][j] > 0:
+                if self.board[i][j] > 1:
                     if self.board[i][j] < 8:
                         color = (119, 110, 101)
                     else:
@@ -100,13 +181,20 @@ def init():
     return board, display
 
 
-def handleInput():
+def handleInput(board):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
-            pass
+            if event.key == pygame.K_w:
+                board.swipeUp();
+            if event.key == pygame.K_s:
+                board.swipeDown();
+            if event.key == pygame.K_a:
+                board.swipeLeft();
+            if event.key == pygame.K_d:
+                board.swipeRight();
 
 
 def update(delta):
@@ -124,7 +212,7 @@ def loop(board, display):
 
     while True:
         delta = clock.tick(Settings.FPS)
-        handleInput()
+        handleInput(board)
         update(delta)
         redraw(board, display)
 
