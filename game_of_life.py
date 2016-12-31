@@ -15,27 +15,26 @@ class Map:
         self.map = [[0 for i in range(MAP_SIZE)] for j in range(MAP_SIZE)]
         print("Initializing map")
 
-    def draw(self, background):
+    def draw(self, display):
         for i in range(MAP_SIZE):
             for j in range(MAP_SIZE):
-                pygame.draw.rect(background, (0, i*8, 0),
+                pygame.draw.rect(display.background, (0, i*8, 0),
                     (i*TILE_SIZE, j*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                print(self.map[i][j], end="")
-            print("")
 
 
 
 class Display:
 
-    def __init__(self, background):
+    def __init__(self):
         print("Initializing display")
-        resolution = (800, 600)    
-        screen = pygame.display.set_mode(resolution)
-        background = pygame.Surface(screen.get_size())
-        background.fill((255, 255, 255))
-        background = background.convert()
-        pygame.draw.circle(background, (0,0,255), (25,25),25) 
-        screen.blit(background, (0, 0))
+        self.resolution = (800, 600)
+        self.screen = pygame.display.set_mode(self.resolution)
+        self.background = pygame.Surface(self.screen.get_size())
+        self.background.fill((255, 255, 255))
+        self.background = self.background.convert()
+
+    def blit(self):
+        self.screen.blit(self.background, (0, 0))
 
 
 def getKeys(event, isdown):
@@ -55,11 +54,12 @@ def handleInput():
             getKeys(event, False)
 
 
-def init(map, background):
+def init():
     print("Initializing game")
     pygame.init()
-    display = Display(background)
-    map.draw(background)
+    display = Display()
+    map = Map()
+    return map, display;
 
 
 def update(delta):
@@ -68,12 +68,13 @@ def update(delta):
     pygame.display.set_caption(text)
 
 
-def redraw(map, background):
-    map.draw(background)
+def redraw(map, display):
+    map.draw(display)
+    display.blit();
     pygame.display.flip()
 
 
-def loop(map, background):
+def loop(map, display):
     global clock
     global MAX_FPS
     
@@ -83,14 +84,12 @@ def loop(map, background):
         delta = clock.tick(MAX_FPS)
         handleInput()
         update(delta)
-        redraw(map, background)
+        redraw(map, display)
 
 
 def main():
-    map = Map()
-    background = None
-    init(map, background)
-    loop(map, background)
+    map, display = init()
+    loop(map, display)
 
 
 if __name__ == "__main__" :
