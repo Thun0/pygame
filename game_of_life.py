@@ -5,9 +5,10 @@ import sys
 
 clock = pygame.time.Clock()
 MAX_FPS = 60
-MAP_WIDTH = 100
-MAP_HEIGHT = 80
-TILE_SIZE = 10
+MAP_WIDTH = 80
+MAP_HEIGHT = 50
+TILE_SIZE = 20
+FRAME_WIDTH = 2
 
 class Map:
     """ map class """
@@ -25,7 +26,7 @@ class Map:
                 pygame.draw.rect(display.background, (0, 0, 0),
                                  (j*TILE_SIZE, i*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 pygame.draw.rect(display.background, (color, color, color),
-                                 (j*TILE_SIZE, i*TILE_SIZE, TILE_SIZE-1, TILE_SIZE-1))
+                                 (j*TILE_SIZE, i*TILE_SIZE, TILE_SIZE-FRAME_WIDTH, TILE_SIZE-FRAME_WIDTH))
 
     def countNeighbours(self, old, tileX, tileY):
         neighbours = 0
@@ -91,7 +92,7 @@ class Settings:
     mousePressed = 0
     painting = 1
     started = False
-    delay = 50
+    delay = 30
 
 def handleInput(map):
 
@@ -132,7 +133,7 @@ def update(delta, map):
         map.paint(tileX, tileY)
     if Settings.started:
         map.update()
-        pygame.time.wait(50)
+        pygame.time.wait(Settings.delay)
 
 def redraw(map, display):
     map.draw(display)
