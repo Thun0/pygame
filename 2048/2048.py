@@ -3,7 +3,7 @@
 import sys
 
 import pygame
-
+import random
 
 class Settings:
     TILE_SIZE = 100
@@ -12,11 +12,16 @@ class Settings:
     FRAME_THICKNESS = 8
     OUTER_FRAME_THICKNESS = 20
     OFFSET = 60
+    FONT = "freeserif"
 
 class Board:
 
     def __init__(self):
         self.board = [[0 for i in range(Settings.BOARD_SIZE)] for j in range(Settings.BOARD_SIZE)]
+        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
+        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
+        self.board[random.randint(0, Settings.BOARD_SIZE - 1)][random.randint(0, Settings.BOARD_SIZE - 1)] += 2
+        self.font = pygame.font.SysFont(Settings.FONT, int(Settings.TILE_SIZE/2))
 
     def tileColor(self, value):
         if value == 0:
@@ -25,6 +30,24 @@ class Board:
             return (238, 228, 218)
         if value == 4:
             return (237, 224, 200)
+        if value == 8:
+            return (242, 177, 121)
+        if value == 16:
+            return (236, 141, 83)
+        if value == 32:
+            return (245, 124, 95)
+        if value == 64:
+            return (247, 94, 60)
+        if value == 128:
+            return (244, 216, 109)
+        if value == 256:
+            return (241, 208, 75)
+        if value == 512:
+            return (228, 192, 42)
+        if value == 1024:
+            return (239, 196, 65)
+        else:
+            return (238, 194, 46)
 
 
     def draw(self, display):
@@ -41,6 +64,16 @@ class Board:
                                   i * Settings.TILE_SIZE + Settings.OFFSET,
                                   Settings.TILE_SIZE - Settings.FRAME_THICKNESS,
                                   Settings.TILE_SIZE - Settings.FRAME_THICKNESS))
+                if self.board[i][j] > 0:
+                    if self.board[i][j] < 8:
+                        color = (119, 110, 101)
+                    else:
+                        color = (248, 246, 242)
+                    textVal = self.font.render(str(self.board[i][j]), True, color)
+                    textSize = self.font.size(str(self.board[i][j]))
+                    textX = j * Settings.TILE_SIZE + Settings.OFFSET + Settings.TILE_SIZE/2 - textSize[0]/1.75
+                    textY = i * Settings.TILE_SIZE + Settings.OFFSET + Settings.TILE_SIZE/2 - textSize[1]/1.8
+                    display.background.blit(textVal, (textX, textY))
 
 
 class Display:
