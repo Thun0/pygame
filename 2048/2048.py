@@ -20,7 +20,7 @@ class Board:
         self.board = [[1 for i in range(Settings.BOARD_SIZE)] for j in range(Settings.BOARD_SIZE)]
         self.addToken()
         self.addToken()
-        self.font = pygame.font.SysFont(Settings.FONT, int(Settings.TILE_SIZE/2))
+        self.font = pygame.font.SysFont(Settings.FONT, int(Settings.TILE_SIZE/3))
 
     def tileColor(self, value):
         if value == 1:
