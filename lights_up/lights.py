@@ -35,6 +35,7 @@ class Map:
     map = []
     width = 0
     height = 0
+    checking = False
 
     def __init__(self, display, filename):
         self.display = display
@@ -48,7 +49,10 @@ class Map:
 
     def drawValue(self, i, j):
         if self.map[i][j].value >= 0:
-            textVal = self.font.render(str(self.map[i][j].value), True, (255, 255, 255))
+            color = (255, 255, 255)
+            if self.checking and self.getNeighbourBulbs(i, j) != self.map[i][j].value:
+                color = (230, 20, 20)
+            textVal = self.font.render(str(self.map[i][j].value), True, color)
             textSize = self.font.size(str(self.map[i][j].value))
             textX = j * TILE_SIZE + TILE_SIZE / 2 - textSize[0] / 1.75
             textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
@@ -89,19 +93,19 @@ class Map:
                 break
             self.map[idx][j].value += diff
             idx -= 1
-        idx = i
+        idx = i+1
         while idx < self.width:
             if self.map[idx][j].type == Tile.WALL:
                 break
             self.map[idx][j].value += diff
             idx += 1
-        idx = j
+        idx = j-1
         while idx >= 0:
             if self.map[i][idx].type == Tile.WALL:
                 break
             self.map[i][idx].value += diff
             idx -= 1
-        idx = j
+        idx = j+1
         while idx < self.height:
             if self.map[i][idx].type == Tile.WALL:
                 break
@@ -134,12 +138,29 @@ class Map:
                          (j * TILE_SIZE + TILE_SIZE / 4, i * TILE_SIZE + TILE_SIZE * 3 / 4), 2)
 
     def drawBulb(self, i, j):
-        pygame.draw.circle(self.display.background, (0, 0, 0),
+        color = (0, 0, 0)
+        if self.checking and self.map[i][j].value > 1:
+            color = (240, 30, 30)
+        pygame.draw.circle(self.display.background, color,
                            (int(j * TILE_SIZE + TILE_SIZE/2), int(i * TILE_SIZE + TILE_SIZE/2)), int(TILE_SIZE/3), 2)
 
+    # FIXME: needs implementation
     def checkSolution(self):
-        # FIXME: needs implementation
         pass
+
+    # FIXME: needs implementation
+    def getNeighbourBulbs(self, i, j):
+        total = 0
+        if i > 0 and self.map[i-1][j].type == Tile.BULB:
+                total += 1
+        if i < self.width-1 and self.map[i+1][j].type == Tile.BULB:
+                total += 1
+        if j > 0 and self.map[i][j-1].type == Tile.BULB:
+                total += 1
+        if j < self.height-1 and self.map[i][j+1].type == Tile.BULB:
+                total += 1
+
+        return total
 
 class Display:
     def __init__(self):
@@ -168,6 +189,8 @@ def handleInput(map):
                 map.toggleBulb(tileX, tileY)
             elif event.button == 3:
                 map.toggleCross(tileX, tileY)
+            elif event.button == 2:
+                map.checking = not map.checking
 
 
 def init():
