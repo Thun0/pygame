@@ -18,7 +18,6 @@ class Tile:
     CROSS = 3
 
     type = EMPTY
-    lighted = False
     value = 0
 
     def __init__(self):
@@ -37,10 +36,8 @@ class Map:
     width = 0
     height = 0
 
-    def __init__(self):
-        pass
-
-    def __init__(self, filename):
+    def __init__(self, display, filename):
+        self.display = display
         with open(filename) as f:
             line = f.readline()
             self.width, self.height = [int(x) for x in line.split()]
@@ -49,23 +46,100 @@ class Map:
                 self.map.append([Tile(int(x)) for x in line.split()])
         self.font = pygame.font.SysFont(FONT, int(TILE_SIZE / 1.7))
 
-    def draw(self, display):
+    def drawValue(self, i, j):
+        if self.map[i][j].value >= 0:
+            textVal = self.font.render(str(self.map[i][j].value), True, (255, 255, 255))
+            textSize = self.font.size(str(self.map[i][j].value))
+            textX = j * TILE_SIZE + TILE_SIZE / 2 - textSize[0] / 1.75
+            textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
+            self.display.background.blit(textVal, (textX, textY))
+
+    def draw(self):
         for i in range(self.width):
             for j in range(self.height):
-                color = 0
-                if self.map[i][j].type == Tile.EMPTY:
-                    color = 255
-                pygame.draw.rect(display.background, (0, 0, 0),
+                color = (255, 255, 255)
+                if self.map[i][j].type == Tile.WALL:
+                    color = (0, 0, 0)
+                elif self.map[i][j].value > 0:
+                    color = (255, 255, 102)
+                pygame.draw.rect(self.display.background, (0, 0, 0),
                                  (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(display.background, (color, color, color),
+                pygame.draw.rect(self.display.background, color,
                                  (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - FRAME_WIDTH, TILE_SIZE - FRAME_WIDTH))
-                if self.map[i][j].type == Tile.WALL and self.map[i][j].value >= 0:
-                    #self.font.set_bold(True)
-                    textVal = self.font.render(str(self.map[i][j].value), True, (255, 255, 255))
-                    textSize = self.font.size(str(self.map[i][j].value))
-                    textX = j * TILE_SIZE + TILE_SIZE / 2 - textSize[0] / 1.75
-                    textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
-                    display.background.blit(textVal, (textX, textY))
+                if self.map[i][j].type == Tile.WALL:
+                    self.drawValue(i, j)
+                if self.map[i][j].type == Tile.CROSS:
+                    self.drawCross(i, j)
+                if self.map[i][j].type == Tile.BULB:
+                    self.drawBulb(i, j)
+
+
+    def toggleBulb(self, i, j):
+        if self.map[i][j].type == Tile.WALL:
+            return
+        diff = 1
+        if self.map[i][j].type == Tile.BULB:
+            self.map[i][j].type = Tile.EMPTY
+            diff = -1
+        else:
+            self.map[i][j].type = Tile.BULB
+        idx = i
+        while idx >= 0:
+            if self.map[idx][j].type == Tile.WALL:
+                break
+            self.map[idx][j].value += diff
+            idx -= 1
+        idx = i
+        while idx < self.width:
+            if self.map[idx][j].type == Tile.WALL:
+                break
+            self.map[idx][j].value += diff
+            idx += 1
+        idx = j
+        while idx >= 0:
+            if self.map[i][idx].type == Tile.WALL:
+                break
+            self.map[i][idx].value += diff
+            idx -= 1
+        idx = j
+        while idx < self.height:
+            if self.map[i][idx].type == Tile.WALL:
+                break
+            self.map[i][idx].value += diff
+            idx += 1
+
+    def toggleCross(self, i, j):
+        if self.map[i][j].type == Tile.WALL:
+            return
+        if self.map[i][j].type == Tile.CROSS:
+            self.map[i][j].type = Tile.EMPTY
+        else:
+            if self.map[i][j].type == Tile.BULB:
+                self.toggleBulb(i, j)
+            self.map[i][j].type = Tile.CROSS
+
+    def getIndices(self, x, y):
+        tileX = int(x / TILE_SIZE)
+        tileY = int(y / TILE_SIZE)
+        if tileX >= self.width or tileY >= self.height:
+            return -1, -1
+        return tileX, tileY
+
+    def drawCross(self, i, j):
+        pygame.draw.line(self.display.background, (250, 30, 30),
+                         (j * TILE_SIZE + TILE_SIZE / 4, i * TILE_SIZE + TILE_SIZE / 4),
+                         (j * TILE_SIZE + TILE_SIZE * 3 / 4, i * TILE_SIZE + TILE_SIZE * 3 / 4), 2)
+        pygame.draw.line(self.display.background, (250, 30, 30),
+                         (j * TILE_SIZE + TILE_SIZE * 3 / 4, i * TILE_SIZE + TILE_SIZE / 4),
+                         (j * TILE_SIZE + TILE_SIZE / 4, i * TILE_SIZE + TILE_SIZE * 3 / 4), 2)
+
+    def drawBulb(self, i, j):
+        pygame.draw.circle(self.display.background, (0, 0, 0),
+                           (int(j * TILE_SIZE + TILE_SIZE/2), int(i * TILE_SIZE + TILE_SIZE/2)), int(TILE_SIZE/3), 2)
+
+    def checkSolution(self):
+        # FIXME: needs implementation
+        pass
 
 class Display:
     def __init__(self):
@@ -85,19 +159,28 @@ def handleInput(map):
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            tileY, tileX = map.getIndices(x, y)
+            if tileX == -1:
+                continue
+            if event.button == 1:
+                map.toggleBulb(tileX, tileY)
+            elif event.button == 3:
+                map.toggleCross(tileX, tileY)
 
 
 def init():
     print("Initializing game")
     pygame.init()
     display = Display()
-    map = Map("map1")
-    return map, display;
+    map = Map(display, "map1")
+    return map, display
 
 
 def redraw(map, display):
-    map.draw(display)
-    display.blit();
+    map.draw()
+    display.blit()
     pygame.display.flip()
 
 
