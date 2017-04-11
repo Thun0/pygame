@@ -4,16 +4,11 @@ import sys
 
 import pygame
 
-clock = pygame.time.Clock()
-
-MAX_FPS = 60
-MAP_WIDTH = 80
-MAP_HEIGHT = 50
 TILE_SIZE = 25
-FRAME_WIDTH = 2
+FRAME_WIDTH = 1
 WIDTH = 300
 HEIGHT = 300
-
+FONT = "notomono"
 
 class Tile:
 
@@ -22,6 +17,7 @@ class Tile:
     BULB = 2
     CROSS = 3
 
+    type = EMPTY
     lighted = False
     value = 0
 
@@ -29,7 +25,9 @@ class Tile:
         pass
 
     def __init__(self, val):
-        pass
+        if val != 0:
+            self.type = self.WALL
+            self.value = val-2
 
 
 class Map:
@@ -46,40 +44,28 @@ class Map:
         with open(filename) as f:
             line = f.readline()
             self.width, self.height = [int(x) for x in line.split()]
-            print(str(self.width) + " " + str(self.height))
             for i in range(self.width):
                 line = f.readline()
                 self.map.append([Tile(int(x)) for x in line.split()])
+        self.font = pygame.font.SysFont(FONT, int(TILE_SIZE / 1.7))
 
     def draw(self, display):
         for i in range(self.width):
             for j in range(self.height):
                 color = 0
-                if self.map[i][j] == 0:
+                if self.map[i][j].type == Tile.EMPTY:
                     color = 255
                 pygame.draw.rect(display.background, (0, 0, 0),
                                  (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 pygame.draw.rect(display.background, (color, color, color),
                                  (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - FRAME_WIDTH, TILE_SIZE - FRAME_WIDTH))
-
-    def clear(self):
-        self.map = [[0 for i in range(MAP_WIDTH)] for j in range(MAP_HEIGHT)]
-
-    def update(self):
-        old = [x[:] for x in self.map]
-        for i in range(MAP_HEIGHT):
-            for j in range(MAP_WIDTH):
-                neighbours = self.countNeighbours(old, i, j)
-                if self.map[i][j] == 1:
-                    if neighbours == 2 or neighbours == 3:
-                        self.map[i][j] = 1
-                    else:
-                        self.map[i][j] = 0
-                elif neighbours == 3:
-                    self.map[i][j] = 1
-                else:
-                    self.map[i][j] = 0
-
+                if self.map[i][j].type == Tile.WALL and self.map[i][j].value >= 0:
+                    #self.font.set_bold(True)
+                    textVal = self.font.render(str(self.map[i][j].value), True, (255, 255, 255))
+                    textSize = self.font.size(str(self.map[i][j].value))
+                    textX = j * TILE_SIZE + TILE_SIZE / 2 - textSize[0] / 1.75
+                    textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
+                    display.background.blit(textVal, (textX, textY))
 
 class Display:
     def __init__(self):
@@ -116,11 +102,7 @@ def redraw(map, display):
 
 
 def loop(map, display):
-    global clock
-    global MAX_FPS
-
     while True:
-        delta = clock.tick(MAX_FPS)
         handleInput(map)
         redraw(map, display)
 
