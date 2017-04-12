@@ -151,26 +151,42 @@ class Map:
     def getLeftNeighbour(self, i, j):
         if i > 0:
             return self.map[i-1][j]
-        else:
-            return None
+        return None
 
     def getUpNeighbour(self, i, j):
         if j > 0:
             return self.map[i][j-1]
-        else:
-            return None
+        return None
 
     def getRightNeighbour(self, i, j):
         if i < self.width-1:
             return self.map[i+1][j]
-        else:
-            return None
+        return None
 
     def getDownNeighbour(self, i, j):
         if j < self.height-1:
             return self.map[i][j+1]
-        else:
-            return None
+        return None
+
+    def getTopLeftNeighbour(self, i, j):
+        if i > 0 and j > 0:
+            return self.map[i-1][j-1]
+        return None
+
+    def getTopRightNeighbour(self, i, j):
+        if i < self.width-1 and j > 0:
+            return self.map[i+1][j-1]
+        return None
+
+    def getBottomLeftNeighbour(self, i, j):
+        if i > 0 and j < self.height-1:
+            return self.map[i-1][j+1]
+        return None
+
+    def getBottomRightNeighbour(self, i, j):
+        if i < self.width-1 and j < self.height-1:
+            return self.map[i+1][j+1]
+        return None
 
     def getNeighboursCountType(self, i, j, type):
         total = 0
@@ -253,7 +269,8 @@ class Map:
     def solve(self):
         # 1: cross near 0
         # 2: fill bulbs when value = empty neighbours
-        # 3: cross diagonal when value = empty neighbours + 1
+        # TODO: 3: cross diagonal when value = empty neighbours + 1
+        # TODO: 4: if only one bulb placement light this tile -> put bulb
         change = True
         while change:
             change = False
