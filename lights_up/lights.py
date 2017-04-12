@@ -50,7 +50,7 @@ class Map:
     def drawValue(self, i, j):
         if self.map[i][j].value >= 0:
             color = (255, 255, 255)
-            if self.checking and self.getNeighbourBulbs(i, j) != self.map[i][j].value:
+            if self.checking and self.getBulbNeighbourCount(i, j) != self.map[i][j].value:
                 color = (230, 20, 20)
             textVal = self.font.render(str(self.map[i][j].value), True, color)
             textSize = self.font.size(str(self.map[i][j].value))
@@ -148,19 +148,122 @@ class Map:
     def checkSolution(self):
         pass
 
-    # FIXME: needs implementation
-    def getNeighbourBulbs(self, i, j):
-        total = 0
-        if i > 0 and self.map[i-1][j].type == Tile.BULB:
-                total += 1
-        if i < self.width-1 and self.map[i+1][j].type == Tile.BULB:
-                total += 1
-        if j > 0 and self.map[i][j-1].type == Tile.BULB:
-                total += 1
-        if j < self.height-1 and self.map[i][j+1].type == Tile.BULB:
-                total += 1
+    def getLeftNeighbour(self, i, j):
+        if i > 0:
+            return self.map[i-1][j]
+        else:
+            return None
 
+    def getUpNeighbour(self, i, j):
+        if j > 0:
+            return self.map[i][j-1]
+        else:
+            return None
+
+    def getRightNeighbour(self, i, j):
+        if i < self.width-1:
+            return self.map[i+1][j]
+        else:
+            return None
+
+    def getDownNeighbour(self, i, j):
+        if j < self.height-1:
+            return self.map[i][j+1]
+        else:
+            return None
+
+    def getNeighboursCountType(self, i, j, type):
+        total = 0
+        left = self.getLeftNeighbour(i, j)
+        right = self.getRightNeighbour(i, j)
+        up = self.getUpNeighbour(i, j)
+        down = self.getDownNeighbour(i, j)
+        if left and left.type == type:
+            total += 1
+            if type == Tile.EMPTY and left.value != 0:
+                total -= 1
+        if right and right.type == type:
+            total += 1
+            if type == Tile.EMPTY and right.value != 0:
+                total -= 1
+        if up and up.type == type:
+            total += 1
+            if type == Tile.EMPTY and up.value != 0:
+                total -= 1
+        if down and down.type == type:
+            total += 1
+            if type == Tile.EMPTY and down.value != 0:
+                total -= 1
         return total
+
+    def getBulbNeighboursCount(self, i, j):
+        return self.getNeighboursCountType(i, j, Tile.BULB)
+
+    def getEmptyNeighboursCount(self, i, j):
+        return self.getNeighboursCountType(i, j, Tile.EMPTY)
+
+    def crossNeighbours(self, i, j):
+        change = False
+        left = self.getLeftNeighbour(i, j)
+        right = self.getRightNeighbour(i, j)
+        up = self.getUpNeighbour(i, j)
+        down = self.getDownNeighbour(i, j)
+        if left:
+            if left.type == Tile.EMPTY:
+                change = True
+                self.toggleCross(i-1, j)
+        if right:
+            if right.type == Tile.EMPTY:
+                change = True
+                self.toggleCross(i+1, j)
+        if up:
+            if up.type == Tile.EMPTY:
+                change = True
+                self.toggleCross(i, j-1)
+        if down:
+            if down.type == Tile.EMPTY:
+                change = True
+                self.toggleCross(i, j+1)
+        return change
+
+    def bulbNeighbours(self, i, j):
+        change = False
+        left = self.getLeftNeighbour(i, j)
+        right = self.getRightNeighbour(i, j)
+        up = self.getUpNeighbour(i, j)
+        down = self.getDownNeighbour(i, j)
+        if left:
+            if left.type == Tile.EMPTY and left.value == 0:
+                change = True
+                self.toggleBulb(i-1, j)
+        if right:
+            if right.type == Tile.EMPTY and right.value == 0:
+                change = True
+                self.toggleBulb(i+1, j)
+        if up:
+            if up.type == Tile.EMPTY and up.value == 0:
+                change = True
+                self.toggleBulb(i, j-1)
+        if down:
+            if down.type == Tile.EMPTY and down.value == 0:
+                change = True
+                self.toggleBulb(i, j+1)
+        return change
+
+    def solve(self):
+        # 1: cross near 0
+        # 2: fill bulbs when value = empty neighbours
+        # 3: cross diagonal when value = empty neighbours + 1
+        change = True
+        while change:
+            change = False
+            for i in range(self.width):
+                for j in range(self.height):
+                    if self.map[i][j].type == Tile.WALL:
+                        if self.map[i][j].value == 0:
+                            change = change | self.crossNeighbours(i, j)
+                        elif self.map[i][j].value - self.getBulbNeighboursCount(i, j) == self.getEmptyNeighboursCount(i, j):
+                            change = change | self.bulbNeighbours(i, j)
 
 class Display:
     def __init__(self):
@@ -208,6 +311,7 @@ def redraw(map, display):
 
 
 def loop(map, display):
+    map.solve()
     while True:
         handleInput(map)
         redraw(map, display)
