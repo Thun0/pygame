@@ -9,24 +9,25 @@ FRAME_WIDTH = 1
 WIDTH = 600
 HEIGHT = 600
 FONT = "ubuntu"
-drawPossibilities = False
+drawPossibilities = True
 
 
 class Tile:
+
     EMPTY = 0
     WALL = 1
     SUM_DOWN = 2
     SUM_RIGHT = 3
     SUM_BOTH = 4
 
-    type = EMPTY
-    sumRight = -1
-    sumDown = -1
-    value = -1
-    possible = [True for i in range(10)]
-    active = False
-
     def __init__(self, val):
+        self.type = self.EMPTY
+        self.sumRight = -1
+        self.sumDown = -1
+        self.value = -1
+        self.possible = []
+        self.active = False
+        self.possible = [True for i in range(10)]
         self.possible[0] = False
         if val == 1:
             self.type = self.WALL
@@ -36,7 +37,6 @@ class Tile:
             self.type = self.SUM_RIGHT
         elif val == 4:
             self.type = self.SUM_BOTH
-
 
     def getPossibilitiesCount(self):
         sum = 0
@@ -82,13 +82,13 @@ class Map:
             line = f.readline()
             idx = 0
             for value in line.split():
-                self.downTiles[idx].sumDown = value;
+                self.downTiles[idx].sumDown = int(value);
                 idx += 1
             # right sums
             line = f.readline()
             idx = 0
             for value in line.split():
-                self.rightTiles[idx].sumRight = value;
+                self.rightTiles[idx].sumRight = int(value);
                 idx += 1
 
         self.initSums()
@@ -97,7 +97,7 @@ class Map:
         self.valueFont = pygame.font.SysFont(FONT, int(TILE_SIZE / 1.5))
 
     def initSums(self):
-        sum2 = [[] in range(3)]
+        sum2 = [[] for i in range(3)]
         sum2.append([1, 2])
         sum2.append([1, 3])
         sum2.append([1, 2, 3, 4])
@@ -114,7 +114,7 @@ class Map:
         sum2.append([7, 9])
         sum2.append([8, 9])
 
-        sum3 = [[] in range(6)]
+        sum3 = [[] for i in range(6)]
         sum3.append([1, 2, 3])
         sum3.append([1, 2, 4])
         sum3.append([1, 2, 3, 4, 5])
@@ -122,7 +122,7 @@ class Map:
         sum3.append([1, 2, 3, 4, 5, 6, 7])
         sum3.append([1, 2, 3, 4, 5, 6, 7, 8])
         for i in range(7):
-            sum3.append([i in range(1, 10)])
+            sum3.append([i for i in range(1, 10)])
         sum3.append([2, 3, 4, 5, 6, 7, 8, 9])
         sum3.append([3, 4, 5, 6, 7, 8, 9])
         sum3.append([4, 5, 6, 7, 8, 9])
@@ -130,7 +130,7 @@ class Map:
         sum3.append([6, 8, 9])
         sum3.append([7, 8, 9])
 
-        sum4 = [[]in range(10)]
+        sum4 = [[] for i in range(10)]
         sum4.append([1, 2, 3, 4])
         sum4.append([1, 2, 3, 5])
         sum4.append([1, 2, 3, 4, 5, 6])
@@ -144,7 +144,7 @@ class Map:
         sum4.append([5, 7, 8, 9])
         sum4.append([6, 7, 8, 9])
 
-        sum5 = [[]in range(15)]
+        sum5 = [[] for i in range(15)]
         sum5.append([i for i in range(1, 6)])
         sum5.append([1, 2, 3, 4, 6])
         sum5.append([i in range(1, 8)])
@@ -156,17 +156,17 @@ class Map:
         sum5.append([4, 6, 7, 8, 9])
         sum5.append([5, 6, 7, 8, 9])
 
-        sum6 = [[]in range(21)]
+        sum6 = [[] for i in range(21)]
         sum6.append([1, 2, 3, 4, 5, 6])
         sum6.append([1, 2, 3, 4, 5, 7])
         sum6.append([i for i in range(1, 9)])
         for i in range(13):
             sum6.append([j for j in range(1, 10)])
-        sum6.append([i in range(2, 10)])
+        sum6.append([i for i in range(2, 10)])
         sum6.append([3, 5, 6, 7, 8, 9])
         sum6.append([4, 5, 6, 7, 8, 9])
 
-        sum7 = [[] in range(28)]
+        sum7 = [[] for i in range(28)]
         sum7.append([1, 2, 3, 4, 5, 6, 7])
         sum7.append([1, 2, 3, 4, 5, 6, 8])
         for i in range(11):
@@ -174,7 +174,7 @@ class Map:
         sum7.append([2, 4, 5, 6, 7, 8, 9])
         sum7.append([3, 4, 5, 6, 7, 8, 9])
 
-        sum8 = [[] in range(36)]
+        sum8 = [[] for i in range(36)]
         sum8.append([1, 2, 3, 4, 5, 6, 7, 8])
         sum8.append([1, 2, 3, 4, 5, 6, 7, 9])
         sum8.append([1, 2, 3, 4, 5, 6, 8, 9])
@@ -185,19 +185,39 @@ class Map:
         sum8.append([1, 3, 4, 5, 6, 7, 8, 9])
         sum8.append([2, 3, 4, 5, 6, 7, 8, 9])
 
-        sum9 = [[] in range(45)]
+        sum9 = [[] for i in range(45)]
         sum9.append([i in range(1, 10)])
 
         self.sums.append([])
         self.sums.append([])
-        self.sums.append([sum2])
-        self.sums.append([sum3])
-        self.sums.append([sum4])
-        self.sums.append([sum5])
-        self.sums.append([sum6])
-        self.sums.append([sum7])
-        self.sums.append([sum8])
-        self.sums.append([sum9])
+        self.sums.append(sum2)
+        self.sums.append(sum3)
+        self.sums.append(sum4)
+        self.sums.append(sum5)
+        self.sums.append(sum6)
+        self.sums.append(sum7)
+        self.sums.append(sum8)
+        self.sums.append(sum9)
+
+    def getRightTilesCount(self, i, j):
+        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1
+        count = 0
+        j += 1
+        while j < self.height and self.map[i][j].type == Tile.EMPTY:
+            count += 1
+            j += 1
+        return count
+
+    def getDownTilesCount(self, i, j):
+        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1
+        count = 0
+        i += 1
+        while i < self.width and self.map[i][j].type == Tile.EMPTY:
+            count += 1
+            i += 1
+        return count
 
     def drawPossibility(self, i, j, val):
         color = (0, 0, 0)
@@ -241,7 +261,6 @@ class Map:
 
     def draw(self):
         global drawPossibilities
-
         for i in range(self.width):
             for j in range(self.height):
                 color = (255, 255, 255)
@@ -270,6 +289,7 @@ class Map:
                             for k in range(10):
                                 if self.map[i][j].isPossible(k):
                                     self.drawPossibility(i, j, k)
+
                 else:
                     self.drawSum(i, j)
 
@@ -301,6 +321,92 @@ class Map:
     def deleteValue(self):
         if self.active != (-1, -1):
             self.map[self.active[0]][self.active[1]].value = -1
+
+    def updateTilePossibilities(self, tile, list):
+        change = False
+        for i in range(10):
+            if i not in list and tile.possible[i] == True:
+                tile.possible[i] = False
+                change = True
+        return change
+
+    def updateRightPossibilities(self, i, j):
+        change = False
+        if self.map[i][j].sumRight == -1:
+            return False
+        sum = self.map[i][j].sumRight
+        count = self.getRightTilesCount(i, j)
+        for k in range(count):
+            j += 1
+            if self.map[i][j].value == -1:
+                change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
+        return change
+
+    def updateDownPossibilities(self, i, j):
+        change = False
+        if self.map[i][j].sumDown == -1:
+            return False
+        sum = self.map[i][j].sumDown
+        count = self.getDownTilesCount(i, j)
+        for k in range(count):
+            i += 1
+            if self.map[i][j].value == -1:
+                change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
+        return change
+
+    def updateValue(self, i, j):
+        change = False
+        if self.map[i][j].getPossibilitiesCount() == 1:
+            for k in range(10):
+                if self.map[i][j].possible[k] == True:
+                    self.map[i][j].value = k
+                    self.map[i][j].possible[k] = False
+                    change = True
+        return change
+
+    def removeDuplicates(self, i, j):
+        change = False
+        val = self.map[i][j].value
+        if val == -1:
+            return change
+        idx = j
+        while idx > 0 and self.map[i][idx].type == Tile.EMPTY:
+            idx -= 1
+            if self.map[i][idx].possible[val]:
+                self.map[i][idx].possible[val] = False
+                change = True
+        idx = j
+        while idx < self.height-1 and self.map[i][idx].type == Tile.EMPTY:
+            idx += 1
+            if self.map[i][idx].possible[val]:
+                self.map[i][idx].possible[val] = False
+                change = True
+        idx = i
+        while idx > 0 and self.map[idx][j].type == Tile.EMPTY:
+            idx -= 1
+            if self.map[idx][j].possible[val]:
+                self.map[idx][j].possible[val] = False
+                change = True
+        idx = i
+        while idx < self.height - 1 and self.map[idx][j].type == Tile.EMPTY:
+            idx += 1
+            if self.map[idx][j].possible[val]:
+                self.map[idx][j].possible[val] = False
+                change = True
+        return change
+
+    def updatePossibilities(self):
+        change = True
+        while change == True:
+            change = False
+            for i in range(self.width):
+                for j in range(self.height):
+                    if self.map[i][j].type == Tile.EMPTY:
+                        change = change | self.updateValue(i, j)
+                        change = change | self.removeDuplicates(i, j)
+                    else:
+                        change = change | self.updateDownPossibilities(i, j)
+                        change = change | self.updateRightPossibilities(i, j)
 
 
 class Display:
@@ -335,6 +441,7 @@ def handleInput(map):
             val = event.key - 48
             if 1 <= val <= 9:
                 map.insertValue(val)
+                map.updatePossibilities()
             if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
                 map.deleteValue()
             if event.key == pygame.K_ESCAPE:
@@ -346,6 +453,7 @@ def init():
     pygame.init()
     display = Display()
     map = Map(display, "kakuro1")
+    map.updatePossibilities()
     return map, display
 
 
