@@ -50,7 +50,7 @@ class Map:
     def drawValue(self, i, j):
         if self.map[i][j].value >= 0:
             color = (255, 255, 255)
-            if self.checking and self.getBulbNeighbourCount(i, j) != self.map[i][j].value:
+            if self.checking and self.getBulbNeighboursCount(i, j) != self.map[i][j].value:
                 color = (230, 20, 20)
             textVal = self.font.render(str(self.map[i][j].value), True, color)
             textSize = self.font.size(str(self.map[i][j].value))
