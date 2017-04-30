@@ -97,6 +97,8 @@ class Map:
         self.valueFont = pygame.font.SysFont(FONT, int(TILE_SIZE / 1.5))
 
     def initSums(self):
+        sum1 = [[], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
+
         sum2 = [[] for i in range(3)]
         sum2.append([1, 2])
         sum2.append([1, 3])
@@ -189,7 +191,7 @@ class Map:
         sum9.append([i in range(1, 10)])
 
         self.sums.append([])
-        self.sums.append([])
+        self.sums.append(sum1)
         self.sums.append(sum2)
         self.sums.append(sum3)
         self.sums.append(sum4)
@@ -198,6 +200,28 @@ class Map:
         self.sums.append(sum7)
         self.sums.append(sum8)
         self.sums.append(sum9)
+
+    def getRightEmptyTilesCount(self, i, j):
+        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1
+        count = 0
+        j += 1
+        while j < self.height and self.map[i][j].type == Tile.EMPTY:
+            if self.map[i][j].value == -1:
+                count += 1
+            j += 1
+        return count
+
+    def getDownEmptyTilesCount(self, i, j):
+        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1
+        count = 0
+        i += 1
+        while i < self.width and self.map[i][j].type == Tile.EMPTY:
+            if self.map[i][j].value == -1:
+                count += 1
+            i += 1
+        return count
 
     def getRightTilesCount(self, i, j):
         if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
@@ -334,11 +358,14 @@ class Map:
         change = False
         if self.map[i][j].sumRight == -1:
             return False
-        sum = self.map[i][j].sumRight
-        count = self.getRightTilesCount(i, j)
-        for k in range(count):
+        sum = self.getRemainingRightSum(i, j)
+        print("Remaining r-sum({}, {}): {}".format(i, j, sum))
+        steps = self.getRightTilesCount(i, j)
+        count = self.getRightEmptyTilesCount(i, j)
+        for k in range(steps):
             j += 1
             if self.map[i][j].value == -1:
+                print("Pos({}, {}): {}||{}".format(i, j, count, sum))
                 change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
         return change
 
@@ -346,15 +373,19 @@ class Map:
         change = False
         if self.map[i][j].sumDown == -1:
             return False
-        sum = self.map[i][j].sumDown
-        count = self.getDownTilesCount(i, j)
-        for k in range(count):
+        sum = self.getRemainingDownSum(i, j)
+        print("Remaining d-sum({}, {}): {}".format(i, j, sum))
+        steps = self.getDownTilesCount(i, j)
+        count = self.getDownEmptyTilesCount(i, j)
+        for k in range(steps):
             i += 1
             if self.map[i][j].value == -1:
+                print("Pos({}, {}): {}||{}".format(i, j, count, sum))
                 change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
         return change
 
     def updateValue(self, i, j):
+        print("Updated val({}, {})".format(i, j))
         change = False
         if self.map[i][j].getPossibilitiesCount() == 1:
             for k in range(10):
@@ -374,24 +405,32 @@ class Map:
             idx -= 1
             if self.map[i][idx].possible[val]:
                 self.map[i][idx].possible[val] = False
+                self.updateValue(i, idx)
+                self.removeDuplicates(i, idx)
                 change = True
         idx = j
         while idx < self.height-1 and self.map[i][idx].type == Tile.EMPTY:
             idx += 1
             if self.map[i][idx].possible[val]:
                 self.map[i][idx].possible[val] = False
+                self.updateValue(i, idx)
+                self.removeDuplicates(i, idx)
                 change = True
         idx = i
         while idx > 0 and self.map[idx][j].type == Tile.EMPTY:
             idx -= 1
             if self.map[idx][j].possible[val]:
                 self.map[idx][j].possible[val] = False
+                self.updateValue(idx, j)
+                self.removeDuplicates(idx, j)
                 change = True
         idx = i
         while idx < self.height - 1 and self.map[idx][j].type == Tile.EMPTY:
             idx += 1
             if self.map[idx][j].possible[val]:
                 self.map[idx][j].possible[val] = False
+                self.updateValue(idx, j)
+                self.removeDuplicates(idx, j)
                 change = True
         return change
 
@@ -399,14 +438,57 @@ class Map:
         change = True
         while change == True:
             change = False
+            redraw(self, self.display)
+            #waitForClick()
+            print("Iteration!")
             for i in range(self.width):
                 for j in range(self.height):
                     if self.map[i][j].type == Tile.EMPTY:
-                        change = change | self.updateValue(i, j)
-                        change = change | self.removeDuplicates(i, j)
+                        #change = change | self.updateValue(i, j)
+                        #change = change | self.removeDuplicates(i, j)
+                        if self.updateValue(i, j):
+                            print("Update value for: {}, {}".format(i, j))
+                            change = True
+                        if self.removeDuplicates(i, j):
+                            print("Removed duplicates for: {}, {}".format(i, j))
+                            change = True
                     else:
-                        change = change | self.updateDownPossibilities(i, j)
-                        change = change | self.updateRightPossibilities(i, j)
+                        #change = change | self.updateDownPossibilities(i, j)
+                        #change = change | self.updateRightPossibilities(i, j)
+                        if self.updateRightPossibilities(i, j):
+                            print("Updated r-pos for: {}, {}".format(i, j))
+                            change = True
+                        if self.updateDownPossibilities(i, j):
+                            print("Updated d-pos for: {}, {}".format(i, j))
+                            change = True
+
+
+    def getRemainingRightSum(self, i, j):
+        idx = j
+        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1337
+        currentSum = 0
+        count = self.getRightTilesCount(i, j)
+        for k in range(count):
+            idx += 1
+            if i == 7 and j == 0:
+                print("JESTEM: {}".format(idx))
+            if self.map[i][idx].value != -1:
+                currentSum += self.map[i][idx].value
+        return self.map[i][j].sumRight - currentSum
+
+    def getRemainingDownSum(self, i, j):
+        idx = i
+        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+            return -1337
+        currentSum = 0
+        count = self.getDownTilesCount(i, j)
+        for k in range(count):
+            idx += 1
+            if self.map[idx][j].value != -1:
+                currentSum += self.map[idx][j].value
+        return self.map[i][j].sumDown - currentSum
+
 
 
 class Display:
@@ -453,9 +535,21 @@ def init():
     pygame.init()
     display = Display()
     map = Map(display, "kakuro1")
+    print(map.sums[1])
+    print(map.sums[1][1])
+    print(map.sums[2])
     map.updatePossibilities()
     return map, display
 
+def waitForClick():
+    zzz = True
+    while zzz:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                zzz = False
 
 def redraw(map, display):
     map.draw()
