@@ -63,7 +63,6 @@ class Map:
     width = 0
     height = 0
     active = (-1, -1)
-    sums = []
 
     def __init__(self, display, filename):
         self.display = display
@@ -82,19 +81,129 @@ class Map:
             line = f.readline()
             idx = 0
             for value in line.split():
-                self.downTiles[idx].sumDown = int(value);
+                self.downTiles[idx].sumDown = int(value)
                 idx += 1
             # right sums
             line = f.readline()
             idx = 0
             for value in line.split():
-                self.rightTiles[idx].sumRight = int(value);
+                self.rightTiles[idx].sumRight = int(value)
                 idx += 1
 
-        self.initSums()
         self.sumFont = pygame.font.SysFont(FONT, int(TILE_SIZE / 2))
         self.possibilitiesFont = pygame.font.SysFont(FONT, int(TILE_SIZE / 3.5))
         self.valueFont = pygame.font.SysFont(FONT, int(TILE_SIZE / 1.5))
+
+    def drawPossibility(self, i, j, val):
+        color = (0, 0, 0)
+        textVal = self.possibilitiesFont.render(str(val), True, color)
+        offsetX = 0
+        offsetY = 0
+        if 4 <= val <= 6:
+            offsetY = TILE_SIZE / 3
+        if 7 <= val <= 9:
+            offsetY = TILE_SIZE * 2 / 3
+        if val == 2 or val == 5 or val == 8:
+            offsetX = TILE_SIZE / 3
+        if val == 3 or val == 6 or val == 9:
+            offsetX = TILE_SIZE * 2 / 3
+        textX = j * TILE_SIZE + offsetX + TILE_SIZE*0.07
+        textY = i * TILE_SIZE + offsetY
+        self.display.background.blit(textVal, (textX, textY))
+
+    def drawSum(self, i, j):
+        if self.map[i][j].sumRight != -1:
+            color = (0, 0, 0)
+            textVal = self.sumFont.render(str(self.map[i][j].sumRight), True, color)
+            textSize = self.sumFont.size(str(self.map[i][j].sumRight))
+            textX = j * TILE_SIZE + TILE_SIZE * 3 / 4 - textSize[0] / 1.75
+            textY = i * TILE_SIZE + TILE_SIZE / 4 - textSize[1] / 1.8
+            self.display.background.blit(textVal, (textX, textY))
+        if self.map[i][j].sumDown != -1:
+            color = (0, 0, 0)
+            textVal = self.sumFont.render(str(self.map[i][j].sumDown), True, color)
+            textSize = self.sumFont.size(str(self.map[i][j].sumDown))
+            textX = j * TILE_SIZE
+            textY = i * TILE_SIZE + TILE_SIZE * 3 / 4 - textSize[1] / 1.8
+            self.display.background.blit(textVal, (textX, textY))
+
+    def getIndices(self, x, y):
+        tileX = int(x / TILE_SIZE)
+        tileY = int(y / TILE_SIZE)
+        if tileX >= self.width or tileY >= self.height:
+            return -1, -1
+        return tileX, tileY
+
+    def draw(self):
+        global drawPossibilities
+        for i in range(self.width):
+            for j in range(self.height):
+                color = (255, 255, 255)
+                if self.map[i][j].type != Tile.EMPTY:
+                    color = (150, 150, 150)
+                if self.map[i][j].active:
+                    frame = FRAME_WIDTH+1
+                    pygame.draw.rect(self.display.background, (250, 50, 50),
+                                     (j * TILE_SIZE - frame, i * TILE_SIZE - frame, TILE_SIZE+frame, TILE_SIZE+frame))
+                    pygame.draw.rect(self.display.background, color,
+                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - frame, TILE_SIZE - frame))
+                else:
+                    pygame.draw.rect(self.display.background, (0, 0, 0),
+                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                    pygame.draw.rect(self.display.background, color,
+                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - FRAME_WIDTH, TILE_SIZE - FRAME_WIDTH))
+                if self.map[i][j].type != Tile.EMPTY:
+                    pygame.draw.line(self.display.background, (0, 0, 0), (j * TILE_SIZE, i * TILE_SIZE),
+                                     ((j + 1) * TILE_SIZE - 1, (i + 1) * TILE_SIZE - 1), 1)
+
+                if self.map[i][j].type == Tile.EMPTY:
+                    if self.map[i][j].value != -1:
+                        self.drawValue(i, j)
+                    else:
+                        if drawPossibilities:
+                            for k in range(10):
+                                if self.map[i][j].isPossible(k):
+                                    self.drawPossibility(i, j, k)
+
+                else:
+                    self.drawSum(i, j)
+
+    def drawValue(self, i, j):
+        color = (0, 0, 0)
+        textVal = self.valueFont.render(str(self.map[i][j].value), True, color)
+        textSize = self.valueFont.size(str(self.map[i][j].value))
+        textX = j * TILE_SIZE + TILE_SIZE /2 - textSize[0] / 1.75
+        textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
+        self.display.background.blit(textVal, (textX, textY))
+
+    def deactivate(self):
+        self.map[self.active[0]][self.active[1]].active = False
+        self.active = (-1, -1)
+
+    def activate(self, i, j):
+        if self.map[j][i].type != Tile.EMPTY or self.active == (j, i):
+            self.deactivate()
+            return
+        if self.active != (-1, -1):
+            self.map[self.active[0]][self.active[1]].active = False
+        self.active = (j, i)
+        self.map[j][i].active = True
+
+    def insertValue(self, val):
+        if self.active != (-1, -1):
+            self.map[self.active[0]][self.active[1]].value = val
+
+    def deleteValue(self):
+        if self.active != (-1, -1):
+            self.map[self.active[0]][self.active[1]].value = -1
+
+class Solver:
+
+    sums = []
+
+    def __init__(self, board):
+        self.board = board
+        self.initSums()
 
     def initSums(self):
         sum1 = [[], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
@@ -202,149 +311,46 @@ class Map:
         self.sums.append(sum9)
 
     def getRightEmptyTilesCount(self, i, j):
-        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_RIGHT and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1
         count = 0
         j += 1
-        while j < self.height and self.map[i][j].type == Tile.EMPTY:
-            if self.map[i][j].value == -1:
+        while j < self.board.height and self.board.map[i][j].type == Tile.EMPTY:
+            if self.board.map[i][j].value == -1:
                 count += 1
             j += 1
         return count
 
     def getDownEmptyTilesCount(self, i, j):
-        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_DOWN and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1
         count = 0
         i += 1
-        while i < self.width and self.map[i][j].type == Tile.EMPTY:
-            if self.map[i][j].value == -1:
+        while i < self.board.width and self.board.map[i][j].type == Tile.EMPTY:
+            if self.board.map[i][j].value == -1:
                 count += 1
             i += 1
         return count
 
     def getRightTilesCount(self, i, j):
-        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_RIGHT and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1
         count = 0
         j += 1
-        while j < self.height and self.map[i][j].type == Tile.EMPTY:
+        while j < self.board.height and self.board.map[i][j].type == Tile.EMPTY:
             count += 1
             j += 1
         return count
 
     def getDownTilesCount(self, i, j):
-        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_DOWN and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1
         count = 0
         i += 1
-        while i < self.width and self.map[i][j].type == Tile.EMPTY:
+        while i < self.board.width and self.board.map[i][j].type == Tile.EMPTY:
             count += 1
             i += 1
         return count
-
-    def drawPossibility(self, i, j, val):
-        color = (0, 0, 0)
-        textVal = self.possibilitiesFont.render(str(val), True, color)
-        offsetX = 0
-        offsetY = 0
-        if 4 <= val <= 6:
-            offsetY = TILE_SIZE / 3
-        if 7 <= val <= 9:
-            offsetY = TILE_SIZE * 2 / 3
-        if val == 2 or val == 5 or val == 8:
-            offsetX = TILE_SIZE / 3
-        if val == 3 or val == 6 or val == 9:
-            offsetX = TILE_SIZE * 2 / 3
-        textX = j * TILE_SIZE + offsetX + TILE_SIZE*0.07
-        textY = i * TILE_SIZE + offsetY
-        self.display.background.blit(textVal, (textX, textY))
-
-    def drawSum(self, i, j):
-        if self.map[i][j].sumRight != -1:
-            color = (0, 0, 0)
-            textVal = self.sumFont.render(str(self.map[i][j].sumRight), True, color)
-            textSize = self.sumFont.size(str(self.map[i][j].sumRight))
-            textX = j * TILE_SIZE + TILE_SIZE * 3 / 4 - textSize[0] / 1.75
-            textY = i * TILE_SIZE + TILE_SIZE / 4 - textSize[1] / 1.8
-            self.display.background.blit(textVal, (textX, textY))
-        if self.map[i][j].sumDown != -1:
-            color = (0, 0, 0)
-            textVal = self.sumFont.render(str(self.map[i][j].sumDown), True, color)
-            textSize = self.sumFont.size(str(self.map[i][j].sumDown))
-            textX = j * TILE_SIZE
-            textY = i * TILE_SIZE + TILE_SIZE * 3 / 4 - textSize[1] / 1.8
-            self.display.background.blit(textVal, (textX, textY))
-
-    def getIndices(self, x, y):
-        tileX = int(x / TILE_SIZE)
-        tileY = int(y / TILE_SIZE)
-        if tileX >= self.width or tileY >= self.height:
-            return -1, -1
-        return tileX, tileY
-
-    def draw(self):
-        global drawPossibilities
-        for i in range(self.width):
-            for j in range(self.height):
-                color = (255, 255, 255)
-                if self.map[i][j].type != Tile.EMPTY:
-                    color = (150, 150, 150)
-                if self.map[i][j].active:
-                    frame = FRAME_WIDTH+1
-                    pygame.draw.rect(self.display.background, (250, 50, 50),
-                                     (j * TILE_SIZE - frame, i * TILE_SIZE - frame, TILE_SIZE+frame, TILE_SIZE+frame))
-                    pygame.draw.rect(self.display.background, color,
-                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - frame, TILE_SIZE - frame))
-                else:
-                    pygame.draw.rect(self.display.background, (0, 0, 0),
-                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                    pygame.draw.rect(self.display.background, color,
-                                     (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE - FRAME_WIDTH, TILE_SIZE - FRAME_WIDTH))
-                if self.map[i][j].type != Tile.EMPTY:
-                    pygame.draw.line(self.display.background, (0, 0, 0), (j * TILE_SIZE, i * TILE_SIZE),
-                                     ((j + 1) * TILE_SIZE - 1, (i + 1) * TILE_SIZE - 1), 1)
-
-                if self.map[i][j].type == Tile.EMPTY:
-                    if self.map[i][j].value != -1:
-                        self.drawValue(i, j)
-                    else:
-                        if drawPossibilities:
-                            for k in range(10):
-                                if self.map[i][j].isPossible(k):
-                                    self.drawPossibility(i, j, k)
-
-                else:
-                    self.drawSum(i, j)
-
-    def drawValue(self, i, j):
-        color = (0, 0, 0)
-        textVal = self.valueFont.render(str(self.map[i][j].value), True, color)
-        textSize = self.valueFont.size(str(self.map[i][j].value))
-        textX = j * TILE_SIZE + TILE_SIZE /2 - textSize[0] / 1.75
-        textY = i * TILE_SIZE + TILE_SIZE / 2 - textSize[1] / 1.8
-        self.display.background.blit(textVal, (textX, textY))
-
-    def deactivate(self):
-        self.map[self.active[0]][self.active[1]].active = False
-        self.active = (-1, -1)
-
-    def activate(self, i, j):
-        if self.map[j][i].type != Tile.EMPTY or self.active == (j, i):
-            self.deactivate()
-            return
-        if self.active != (-1, -1):
-            self.map[self.active[0]][self.active[1]].active = False
-        self.active = (j, i)
-        self.map[j][i].active = True
-
-    def insertValue(self, val):
-        if self.active != (-1, -1):
-            self.map[self.active[0]][self.active[1]].value = val
-
-    def deleteValue(self):
-        if self.active != (-1, -1):
-            self.map[self.active[0]][self.active[1]].value = -1
 
     def updateTilePossibilities(self, tile, list):
         change = False
@@ -356,7 +362,7 @@ class Map:
 
     def updateRightPossibilities(self, i, j):
         change = False
-        if self.map[i][j].sumRight == -1:
+        if self.board.map[i][j].sumRight == -1:
             return False
         sum = self.getRemainingRightSum(i, j)
         print("Remaining r-sum({}, {}): {}".format(i, j, sum))
@@ -364,14 +370,14 @@ class Map:
         count = self.getRightEmptyTilesCount(i, j)
         for k in range(steps):
             j += 1
-            if self.map[i][j].value == -1:
+            if self.board.map[i][j].value == -1:
                 print("Pos({}, {}): {}||{}".format(i, j, count, sum))
-                change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
+                change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
         return change
 
     def updateDownPossibilities(self, i, j):
         change = False
-        if self.map[i][j].sumDown == -1:
+        if self.board.map[i][j].sumDown == -1:
             return False
         sum = self.getRemainingDownSum(i, j)
         print("Remaining d-sum({}, {}): {}".format(i, j, sum))
@@ -379,56 +385,56 @@ class Map:
         count = self.getDownEmptyTilesCount(i, j)
         for k in range(steps):
             i += 1
-            if self.map[i][j].value == -1:
+            if self.board.map[i][j].value == -1:
                 print("Pos({}, {}): {}||{}".format(i, j, count, sum))
-                change = change | self.updateTilePossibilities(self.map[i][j], self.sums[count][sum])
+                change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
         return change
 
     def updateValue(self, i, j):
         print("Updated val({}, {})".format(i, j))
         change = False
-        if self.map[i][j].getPossibilitiesCount() == 1:
+        if self.board.map[i][j].getPossibilitiesCount() == 1:
             for k in range(10):
-                if self.map[i][j].possible[k] == True:
-                    self.map[i][j].value = k
-                    self.map[i][j].possible[k] = False
+                if self.board.map[i][j].possible[k] == True:
+                    self.board.map[i][j].value = k
+                    self.board.map[i][j].possible[k] = False
                     change = True
         return change
 
     def removeDuplicates(self, i, j):
         change = False
-        val = self.map[i][j].value
+        val = self.board.map[i][j].value
         if val == -1:
             return change
         idx = j
-        while idx > 0 and self.map[i][idx].type == Tile.EMPTY:
+        while idx > 0 and self.board.map[i][idx].type == Tile.EMPTY:
             idx -= 1
-            if self.map[i][idx].possible[val]:
-                self.map[i][idx].possible[val] = False
+            if self.board.map[i][idx].possible[val]:
+                self.board.map[i][idx].possible[val] = False
                 self.updateValue(i, idx)
                 self.removeDuplicates(i, idx)
                 change = True
         idx = j
-        while idx < self.height-1 and self.map[i][idx].type == Tile.EMPTY:
+        while idx < self.board.height-1 and self.board.map[i][idx].type == Tile.EMPTY:
             idx += 1
-            if self.map[i][idx].possible[val]:
-                self.map[i][idx].possible[val] = False
+            if self.board.map[i][idx].possible[val]:
+                self.board.map[i][idx].possible[val] = False
                 self.updateValue(i, idx)
                 self.removeDuplicates(i, idx)
                 change = True
         idx = i
-        while idx > 0 and self.map[idx][j].type == Tile.EMPTY:
+        while idx > 0 and self.board.map[idx][j].type == Tile.EMPTY:
             idx -= 1
-            if self.map[idx][j].possible[val]:
-                self.map[idx][j].possible[val] = False
+            if self.board.map[idx][j].possible[val]:
+                self.board.map[idx][j].possible[val] = False
                 self.updateValue(idx, j)
                 self.removeDuplicates(idx, j)
                 change = True
         idx = i
-        while idx < self.height - 1 and self.map[idx][j].type == Tile.EMPTY:
+        while idx < self.board.height - 1 and self.board.map[idx][j].type == Tile.EMPTY:
             idx += 1
-            if self.map[idx][j].possible[val]:
-                self.map[idx][j].possible[val] = False
+            if self.board.map[idx][j].possible[val]:
+                self.board.map[idx][j].possible[val] = False
                 self.updateValue(idx, j)
                 self.removeDuplicates(idx, j)
                 change = True
@@ -438,12 +444,12 @@ class Map:
         change = True
         while change == True:
             change = False
-            redraw(self, self.display)
+            redraw(self.board, self.board.display)
             #waitForClick()
             print("Iteration!")
-            for i in range(self.width):
-                for j in range(self.height):
-                    if self.map[i][j].type == Tile.EMPTY:
+            for i in range(self.board.width):
+                for j in range(self.board.height):
+                    if self.board.map[i][j].type == Tile.EMPTY:
                         #change = change | self.updateValue(i, j)
                         #change = change | self.removeDuplicates(i, j)
                         if self.updateValue(i, j):
@@ -465,7 +471,7 @@ class Map:
 
     def getRemainingRightSum(self, i, j):
         idx = j
-        if self.map[i][j].type != Tile.SUM_RIGHT and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_RIGHT and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1337
         currentSum = 0
         count = self.getRightTilesCount(i, j)
@@ -473,22 +479,28 @@ class Map:
             idx += 1
             if i == 7 and j == 0:
                 print("JESTEM: {}".format(idx))
-            if self.map[i][idx].value != -1:
-                currentSum += self.map[i][idx].value
-        return self.map[i][j].sumRight - currentSum
+            if self.board.map[i][idx].value != -1:
+                currentSum += self.board.map[i][idx].value
+        return self.board.map[i][j].sumRight - currentSum
 
     def getRemainingDownSum(self, i, j):
         idx = i
-        if self.map[i][j].type != Tile.SUM_DOWN and self.map[i][j].type != Tile.SUM_BOTH:
+        if self.board.map[i][j].type != Tile.SUM_DOWN and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1337
         currentSum = 0
         count = self.getDownTilesCount(i, j)
         for k in range(count):
             idx += 1
-            if self.map[idx][j].value != -1:
-                currentSum += self.map[idx][j].value
-        return self.map[i][j].sumDown - currentSum
+            if self.board.map[idx][j].value != -1:
+                currentSum += self.board.map[idx][j].value
+        return self.board.map[i][j].sumDown - currentSum
 
+class Editor:
+    def __init__(self):
+        print("Initializing editor")
+
+    def blit(self):
+        pass
 
 
 class Display:
@@ -504,7 +516,7 @@ class Display:
         self.screen.blit(self.background, (0, 0))
 
 
-def handleInput(map):
+def handleInput(map, solver):
     global drawPossibilities
 
     for event in pygame.event.get():
@@ -523,7 +535,7 @@ def handleInput(map):
             val = event.key - 48
             if 1 <= val <= 9:
                 map.insertValue(val)
-                map.updatePossibilities()
+                solver.updatePossibilities()
             if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
                 map.deleteValue()
             if event.key == pygame.K_ESCAPE:
@@ -535,11 +547,9 @@ def init():
     pygame.init()
     display = Display()
     map = Map(display, "kakuro1")
-    print(map.sums[1])
-    print(map.sums[1][1])
-    print(map.sums[2])
-    map.updatePossibilities()
-    return map, display
+    solver = Solver(map)
+    solver.updatePossibilities()
+    return map, display, solver
 
 def waitForClick():
     zzz = True
@@ -557,15 +567,15 @@ def redraw(map, display):
     pygame.display.flip()
 
 
-def loop(map, display):
+def loop(map, display, solver):
     while True:
-        handleInput(map)
+        handleInput(map, solver)
         redraw(map, display)
 
 
 def main():
-    map, display = init()
-    loop(map, display)
+    map, display, solver = init()
+    loop(map, display, solver)
 
 
 if __name__ == "__main__":
