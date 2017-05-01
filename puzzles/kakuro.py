@@ -1,15 +1,17 @@
 #!/usr/bin/python3
 
 import sys
-
 import pygame
 
+from tkinter import Tk, filedialog
+
+MAX_FPS = 60
 TILE_SIZE = 50
 FRAME_WIDTH = 1
-WIDTH = 600
+WIDTH = 800
 HEIGHT = 600
 FONT = "ubuntu"
-drawPossibilities = True
+drawPossibilities = False
 
 
 class Tile:
@@ -56,7 +58,7 @@ class Tile:
         return self.possible[val]
 
 
-class Map:
+class Board:
     map = []
     downTiles = []
     rightTiles = []
@@ -441,6 +443,9 @@ class Solver:
         return change
 
     def updatePossibilities(self):
+        global drawPossibilities
+
+        drawPossibilities = True
         change = True
         while change == True:
             change = False
@@ -477,8 +482,6 @@ class Solver:
         count = self.getRightTilesCount(i, j)
         for k in range(count):
             idx += 1
-            if i == 7 and j == 0:
-                print("JESTEM: {}".format(idx))
             if self.board.map[i][idx].value != -1:
                 currentSum += self.board.map[i][idx].value
         return self.board.map[i][j].sumRight - currentSum
@@ -510,13 +513,12 @@ class Button:
     w = 100
     h = 40
     text = "Button"
-    onClick = None
-    color = (150, 150, 150)
+    onClick = lambda *args: None
 
     def __init__(self, display, text):
         self.display = display
         self.text = text
-        self.display.addButton(self)
+        self.font = pygame.font.SysFont(FONT, int(self.h / 2))
 
     def setDimensions(self, width, height):
         self.w = width
@@ -534,16 +536,23 @@ class Button:
 
     def draw(self):
         pygame.draw.rect(self.display.background, self.color, (self.x, self.y, self.w, self.h))
+        textVal = self.font.render(str(self.text), True, (0, 0, 0))
+        textSize = self.font.size(str(self.text))
+        textX = self.x + self.w/2 - textSize[0] / 2
+        textY = self.y + self.h/2 - textSize[1] / 2
+        self.display.background.blit(textVal, (textX, textY))
 
     def inBounds(self, x, y):
         if x >= self.x and x <= self.x+self.w and y >= self.y and y <= self.y+self.w:
             return True
         return False
 
+    color = (150, 150, 150)
+
 
 class Display:
 
-    buttons = []
+    drawables = []
 
     def __init__(self):
         print("Initializing display")
@@ -554,17 +563,54 @@ class Display:
         self.background = self.background.convert()
 
     def blit(self):
-        for button in self.buttons:
-            button.draw()
+        for drawable in self.drawables:
+            drawable.draw()
         self.screen.blit(self.background, (0, 0))
 
-    def addButton(self, button):
-        self.buttons.append(button)
+    def add(self, drawable):
+        self.drawables.append(drawable)
 
     def checkClick(self, x, y):
-        for button in self.buttons:
-            if button.inBounds(x, y):
-                button.onClick()
+        print("C1: {}, {}".format(x, y))
+        for drawable in self.drawables:
+            print("C2: ({}, {}) - ({}, {})".format(drawable.x, drawable.y, drawable.x + drawable.w, drawable.y + drawable.h))
+            if type(drawable) is Button and drawable.inBounds(x, y):
+                drawable.onClick()
+
+
+class MenuView:
+
+    x = 0
+    y = 0
+    SPACING = 10
+
+    def __init__(self, display):
+        self.buttons = []
+        self.display = display
+
+    def addButton(self, button):
+        if len(self.buttons) == 0:
+            buttonY = self.y
+        else:
+            buttonY = self.buttons[-1].y + self.buttons[-1].h + self.SPACING
+        self.buttons.append(button)
+        self.buttons[-1].setPos(self.x, buttonY)
+        self.display.add(self.buttons[-1])
+
+    def setPos(self, x, y):
+        self.x = x
+        self.y = y
+        # TODO: update buttons positions
+
+
+def initMainMenu(display, solver):
+    mainMenu = MenuView(display)
+    mainMenu.setPos(550, 50)
+    b = Button(display, "Solve")
+    b.onClick = solver.updatePossibilities
+    mainMenu.addButton(b)
+    b = Button(display, "Editor")
+    mainMenu.addButton(b)
 
 
 def handleInput(map, display, solver):
@@ -587,7 +633,6 @@ def handleInput(map, display, solver):
             val = event.key - 48
             if 1 <= val <= 9:
                 map.insertValue(val)
-                solver.updatePossibilities()
             if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
                 map.deleteValue()
             if event.key == pygame.K_ESCAPE:
@@ -598,10 +643,10 @@ def init():
     print("Initializing game")
     pygame.init()
     display = Display()
-    map = Map(display, "kakuro1")
+    map = Board(display, "kakuro1")
     solver = Solver(map)
-    solver.updatePossibilities()
     return map, display, solver
+
 
 def waitForClick():
     zzz = True
@@ -613,21 +658,33 @@ def waitForClick():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 zzz = False
 
+
+def chooseFile():
+    Tk().withdraw()
+    filename = filedialog.askopenfilename()
+    return filename
+
+
 def redraw(map, display):
     map.draw()
     display.blit()
+    pygame.time.wait(50)
     pygame.display.flip()
 
 
 def loop(map, display, solver):
+    global MAX_FPS
+
+    clock = pygame.time.Clock()
     while True:
+        clock.tick(MAX_FPS)
         handleInput(map, display, solver)
         redraw(map, display)
 
+
 def main():
     map, display, solver = init()
-    b = Button(display, "BLA")
-    b.setPos(200, 200)
+    initMainMenu(display, solver)
     loop(map, display, solver)
 
 
