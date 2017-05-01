@@ -57,6 +57,10 @@ class Tile:
     def isPossible(self, val):
         return self.possible[val]
 
+    def resetPossibilities(self):
+        self.possible = [True for i in range(10)]
+        self.possible[0] = False
+
 
 class Board:
     map = []
@@ -198,6 +202,7 @@ class Board:
     def deleteValue(self):
         if self.active != (-1, -1):
             self.map[self.active[0]][self.active[1]].value = -1
+            self.map[self.active[0]][self.active[1]].resetPossibilities()
 
 class Solver:
 
@@ -513,9 +518,9 @@ class Button:
     w = 100
     h = 40
     text = "Button"
-    onClick = lambda *args: None
 
     def __init__(self, display, text):
+        self.onClick = lambda *args: None
         self.display = display
         self.text = text
         self.font = pygame.font.SysFont(FONT, int(self.h / 2))
@@ -543,7 +548,7 @@ class Button:
         self.display.background.blit(textVal, (textX, textY))
 
     def inBounds(self, x, y):
-        if x >= self.x and x <= self.x+self.w and y >= self.y and y <= self.y+self.w:
+        if x >= self.x and x <= self.x+self.w and y >= self.y and y <= self.y+self.h:
             return True
         return False
 
@@ -552,10 +557,9 @@ class Button:
 
 class Display:
 
-    drawables = []
-
     def __init__(self):
         print("Initializing display")
+        self.drawables = []
         self.resolution = (WIDTH, HEIGHT)
         self.screen = pygame.display.set_mode(self.resolution)
         self.background = pygame.Surface(self.screen.get_size())
@@ -575,6 +579,7 @@ class Display:
         for drawable in self.drawables:
             print("C2: ({}, {}) - ({}, {})".format(drawable.x, drawable.y, drawable.x + drawable.w, drawable.y + drawable.h))
             if type(drawable) is Button and drawable.inBounds(x, y):
+                print("CLICKED")
                 drawable.onClick()
 
 
@@ -606,11 +611,14 @@ class MenuView:
 def initMainMenu(display, solver):
     mainMenu = MenuView(display)
     mainMenu.setPos(550, 50)
-    b = Button(display, "Solve")
-    b.onClick = solver.updatePossibilities
-    mainMenu.addButton(b)
-    b = Button(display, "Editor")
-    mainMenu.addButton(b)
+    solveButton = Button(display, "Solve")
+    solveButton.onClick = solver.updatePossibilities
+    mainMenu.addButton(solveButton)
+    editButton = Button(display, "Editor")
+    mainMenu.addButton(editButton)
+    openButton = Button(display, "Open")
+    openButton.onClick = chooseFile
+    mainMenu.addButton(openButton)
 
 
 def handleInput(map, display, solver):
