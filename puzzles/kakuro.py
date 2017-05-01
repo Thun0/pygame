@@ -503,7 +503,48 @@ class Editor:
         pass
 
 
+class Button:
+
+    x = 0
+    y = 0
+    w = 100
+    h = 40
+    text = "Button"
+    onClick = None
+    color = (150, 150, 150)
+
+    def __init__(self, display, text):
+        self.display = display
+        self.text = text
+        self.display.addButton(self)
+
+    def setDimensions(self, width, height):
+        self.w = width
+        self.h = height
+
+    def setHeight(self, height):
+        self.h = height
+
+    def setWidth(self, width):
+        self.w = width
+
+    def setPos(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self):
+        pygame.draw.rect(self.display.background, self.color, (self.x, self.y, self.w, self.h))
+
+    def inBounds(self, x, y):
+        if x >= self.x and x <= self.x+self.w and y >= self.y and y <= self.y+self.w:
+            return True
+        return False
+
+
 class Display:
+
+    buttons = []
+
     def __init__(self):
         print("Initializing display")
         self.resolution = (WIDTH, HEIGHT)
@@ -513,10 +554,20 @@ class Display:
         self.background = self.background.convert()
 
     def blit(self):
+        for button in self.buttons:
+            button.draw()
         self.screen.blit(self.background, (0, 0))
 
+    def addButton(self, button):
+        self.buttons.append(button)
 
-def handleInput(map, solver):
+    def checkClick(self, x, y):
+        for button in self.buttons:
+            if button.inBounds(x, y):
+                button.onClick()
+
+
+def handleInput(map, display, solver):
     global drawPossibilities
 
     for event in pygame.event.get():
@@ -526,6 +577,7 @@ def handleInput(map, solver):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 x, y = pygame.mouse.get_pos()
+                display.checkClick(x, y)
                 tileX, tileY = map.getIndices(x, y)
                 if tileX != -1:
                     map.activate(tileX, tileY)
@@ -569,12 +621,13 @@ def redraw(map, display):
 
 def loop(map, display, solver):
     while True:
-        handleInput(map, solver)
+        handleInput(map, display, solver)
         redraw(map, display)
-
 
 def main():
     map, display, solver = init()
+    b = Button(display, "BLA")
+    b.setPos(200, 200)
     loop(map, display, solver)
 
 
