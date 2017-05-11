@@ -57,6 +57,10 @@ class Tile:
     def isPossible(self, val):
         return self.possible[val]
 
+    def clear(self):
+        self.resetPossibilities()
+        self.value = -1
+
     def resetPossibilities(self):
         self.possible = [True for i in range(10)]
         self.possible[0] = False
@@ -317,6 +321,14 @@ class Solver:
         self.sums.append(sum8)
         self.sums.append(sum9)
 
+    def clear(self):
+        global drawPossibilities
+
+        drawPossibilities = False
+        for i in range(self.board.width):
+            for j in range(self.board.height):
+                self.board.map[i][j].clear()
+
     def getRightEmptyTilesCount(self, i, j):
         if self.board.map[i][j].type != Tile.SUM_RIGHT and self.board.map[i][j].type != Tile.SUM_BOTH:
             return -1
@@ -379,7 +391,10 @@ class Solver:
             j += 1
             if self.board.map[i][j].value == -1:
                 print("Pos({}, {}): {}||{}".format(i, j, count, sum))
-                change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
+                try:
+                    change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
+                except IndexError:
+                    self.raiseError(i, j)
         return change
 
     def updateDownPossibilities(self, i, j):
@@ -394,8 +409,15 @@ class Solver:
             i += 1
             if self.board.map[i][j].value == -1:
                 print("Pos({}, {}): {}||{}".format(i, j, count, sum))
-                change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
+                try:
+                    change = change | self.updateTilePossibilities(self.board.map[i][j], self.sums[count][sum])
+                except IndexError:
+                    self.raiseError(i, j)
         return change
+
+    # FIXME: implement this -> color error tile and show message
+    def raiseError(self, i, j):
+        pass
 
     def updateValue(self, i, j):
         print("Updated val({}, {})".format(i, j))
@@ -575,11 +597,8 @@ class Display:
         self.drawables.append(drawable)
 
     def checkClick(self, x, y):
-        print("C1: {}, {}".format(x, y))
         for drawable in self.drawables:
-            print("C2: ({}, {}) - ({}, {})".format(drawable.x, drawable.y, drawable.x + drawable.w, drawable.y + drawable.h))
             if type(drawable) is Button and drawable.inBounds(x, y):
-                print("CLICKED")
                 drawable.onClick()
 
 
@@ -614,6 +633,9 @@ def initMainMenu(display, solver):
     solveButton = Button(display, "Solve")
     solveButton.onClick = solver.updatePossibilities
     mainMenu.addButton(solveButton)
+    clearButton = Button(display, "Clear")
+    clearButton.onClick = solver.clear
+    mainMenu.addButton(clearButton)
     editButton = Button(display, "Editor")
     mainMenu.addButton(editButton)
     openButton = Button(display, "Open")
@@ -635,6 +657,8 @@ def handleInput(map, display, solver):
                 tileX, tileY = map.getIndices(x, y)
                 if tileX != -1:
                     map.activate(tileX, tileY)
+                else:
+                    map.deactivate()
             if event.button == 3:
                 drawPossibilities = not drawPossibilities
         if event.type == pygame.KEYDOWN:
@@ -651,7 +675,7 @@ def init():
     print("Initializing game")
     pygame.init()
     display = Display()
-    map = Board(display, "kakuro1")
+    map = Board(display, "kakuro2")
     solver = Solver(map)
     return map, display, solver
 
